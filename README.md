@@ -14,6 +14,14 @@ Mục tiêu cuối cùng không phải chỉ là “agent nhớ nhiều hơn”,
 - chi phí token
 - độ phức tạp của hệ thống memory
 
+Repo đã có bản triển khai hoàn chỉnh trong `src/`, gồm offline không cần API key và live tùy chọn.
+Xem `src/README.md` để biết chi tiết runtime, `RESULTS.md` để đọc output benchmark và
+`ANALYSIS.md` để đọc phân tích, đối chiếu lần lượt bốn mốc trong Rubric.
+
+File bài nộp: [ANALYSIS.md](ANALYSIS.md) (phân tích và ba câu trả lời về bonus),
+[RESULTS.md](RESULTS.md) (output hai benchmark live đã chạy qua API). Đây là tên mô tả theo phương án dự phòng;
+TODO: xác nhận với giảng viên/lab coach xem có quy định tên riêng trước khi nộp.
+
 ## Các bạn sẽ làm gì trong track này?
 
 Sau khi hoàn thành, các bạn cần có khả năng:
@@ -35,7 +43,7 @@ Sau khi hoàn thành, các bạn cần có khả năng:
 ├── data/            # dữ liệu benchmark dùng chung
 │   ├── conversations.json
 │   └── advanced_long_context.json
-└── src/             # bản scaffold dành cho sinh viên (pseudocode + TODO)
+└── src/             # triển khai agent, memory, benchmark và test
     ├── model_provider.py
     ├── config.py
     ├── memory_store.py
@@ -56,7 +64,7 @@ Các file được liệt kê theo thứ tự nên triển khai:
 | `model_provider.py` | Khởi tạo chat model cho từng provider | `ProviderConfig`, `normalize_provider()`, `build_chat_model()` |
 | `config.py` | Cấu hình chung của lab | `LabConfig` (đường dẫn, ngưỡng compact, model chính + judge), `load_config()` |
 | `memory_store.py` | Lõi memory layer | `estimate_tokens()`, `UserProfileStore` (read/write/edit `User.md`), `extract_profile_updates()`, `summarize_messages()`, `CompactMemoryManager` |
-| `agent_baseline.py` | Agent A: chỉ nhớ trong cùng thread | `BaselineAgent.reply()`, `token_usage()`, `prompt_token_usage()` |
+| `agent_baseline.py` | Agent A: chỉ nhớ trong cùng thread; helper offline/live dùng chung | `BaselineAgent.reply()`, `token_usage()`, `prompt_token_usage()`, `respond_from_facts()`, `build_live_agent()` |
 | `agent_advanced.py` | Agent B: short-term + `User.md` + compact | `AdvancedAgent.reply()`, `_reply_offline()`, `_estimate_prompt_context_tokens()`, `_offline_response()` |
 | `benchmark.py` | So sánh hai agent trên hai bộ dữ liệu | `run_agent_benchmark()`, `recall_points()`, `heuristic_quality()`, `format_rows()` |
 | `test_agents.py` | Kiểm chứng hành vi memory | test `User.md`, compact trigger, cross-session recall, giảm prompt load |
@@ -143,13 +151,22 @@ source .venv/bin/activate
 pip install langchain langgraph langchain-openai langchain-google-genai langchain-anthropic langchain-ollama langchain-openrouter python-dotenv tabulate pytest
 ```
 
-Nếu muốn chạy chế độ live với LLM thật, hãy tạo file `.env` ở root repo (đã nằm trong `.gitignore`). Tên biến môi trường do các bạn quyết định khi viết `load_config()`. Ví dụ:
+Để chỉ chạy offline và test cốt lõi, cài `pytest python-dotenv` là đủ; test live sẽ bỏ qua nếu chưa
+có LangChain. Môi trường hiện tại dùng Python 3.14 và có cảnh báo Pydantic v1 từ dependency
+LangChain; các kiểm tra vẫn chạy được. Python 3.11–3.13 tránh cảnh báo tương thích này.
+
+Nếu muốn chạy chế độ live với LLM thật, hãy tạo file `.env` ở root repo
+(đã nằm trong `.gitignore`). Các biến cấu hình được định nghĩa trong `load_config()`. Ví dụ:
 
 ```
 LLM_PROVIDER=openai
 LLM_MODEL=gpt-4o-mini
 OPENAI_API_KEY=...
 ```
+
+Mặc định `LAB_OFFLINE=true`, compact vượt 1.000 token ước lượng và giữ 4 message. Có thể đổi bằng
+`COMPACT_THRESHOLD_TOKENS` và `COMPACT_KEEP_MESSAGES`. Judge có cấu hình riêng qua tiền tố `JUDGE_`;
+benchmark hiện chấm quality bằng heuristic, kể cả khi chạy live.
 
 ## Chạy benchmark và test
 
@@ -165,6 +182,10 @@ pytest src/test_agents.py -v
 
 Benchmark cần in ra hai bảng: **Standard Benchmark** và **Long-Context Stress Benchmark**. Mỗi bảng so sánh Baseline với Advanced theo đủ 6 cột trong phần "Chỉ số benchmark cần hiểu".
 
+Lệnh benchmark mặc định luôn offline, kể cả khi `.env` có key. Chỉ `python src/benchmark.py --live`
+mới gọi provider thật. Mỗi lần chạy tạo trạng thái mới và lưu cả bảng Markdown, JSON, hồ sơ dưới
+`state/benchmarks/run-*/`. Token đều là ước lượng ký tự, không phải số token hóa đơn API.
+
 ## Cách dùng repo này
 
 Nếu các bạn là sinh viên:
@@ -174,7 +195,7 @@ Nếu các bạn là sinh viên:
 
 Nếu các bạn là giảng viên hoặc reviewer:
 
-- dùng `src/` để đánh giá scaffold giao cho sinh viên và kết quả hoàn thiện cuối cùng
+- dùng `src/`, test, `RESULTS.md` và `ANALYSIS.md` để đánh giá triển khai cùng kết quả hoàn thiện
 
 ## Tài liệu nên đọc tiếp
 

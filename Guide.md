@@ -2,6 +2,11 @@
 
 Tài liệu này hướng dẫn các bạn hoàn thành bài lab của Day 17 theo đúng thứ tự hợp lý. Mục tiêu là làm được bài trong `src/` với một lộ trình rõ ràng từ setup, memory layer, đến benchmark.
 
+Repo hiện đã có bản triển khai các bước dưới đây. Bạn có thể dùng hướng dẫn để đọc code theo thứ
+tự, chạy `python -m pytest src/test_agents.py -v` và `python src/benchmark.py` để kiểm chứng.
+Chi tiết chạy offline/live nằm trong `src/README.md`; output benchmark nằm trong `RESULTS.md`;
+phân tích và đối chiếu bốn mốc Rubric nằm riêng trong `ANALYSIS.md`.
+
 ## Bước 1. Đọc cấu trúc repo
 
 Trước khi code, các bạn cần hiểu repo đang chia trách nhiệm như thế nào.
